@@ -1,0 +1,22 @@
+on:
+  push:
+  pull_request:
+      types: [opened, synchronize, reopened]
+
+name: SonarQube Scan
+jobs:
+  sonarqube:
+    name: SonarQube Trigger
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checking out
+      uses: actions/checkout@master
+      with:
+        # Disabling shallow clone is recommended for improving relevancy of reporting
+        fetch-depth: 0
+    - name: SonarQube Scan
+      uses: kitabisa/sonarqube-action@v1.2.0
+      with:
+        host: https://db36-158-228-253-36.ngrok-free.app 
+        login: 2829cc7a8a8836e28a66477daf6f31975b65bb5a 
+        projectKey: check
