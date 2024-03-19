@@ -1,22 +1,75 @@
+# on:
+#   push:
+#   pull_request:
+#       types: [opened, synchronize, reopened]
+
+# name: SonarQube Scan
+# jobs:
+#   sonarqube:
+#     name: SonarQube Trigger
+#     runs-on: ubuntu-latest
+#     steps:
+#     - name: Checking out
+#       uses: actions/checkout@master
+#       with:
+#         # Disabling shallow clone is recommended for improving relevancy of reporting
+#         fetch-depth: 0
+#     - name: SonarQube Scan
+#       uses: kitabisa/sonarqube-action@v1.2.0
+#       with:
+#         host: https://db36-158-228-253-36.ngrok-free.app 
+#         login: 2829cc7a8a8836e28a66477daf6f31975b65bb5a 
+#         projectKey: check
+
+
+name: SonarQube Analysis and PR Decoration
+
 on:
   push:
   pull_request:
-      types: [opened, synchronize, reopened]
+    paths:
+      - '**.java'
 
-name: SonarQube Scan
 jobs:
   sonarqube:
-    name: SonarQube Trigger
     runs-on: ubuntu-latest
+
     steps:
-    - name: Checking out
-      uses: actions/checkout@master
-      with:
-        # Disabling shallow clone is recommended for improving relevancy of reporting
-        fetch-depth: 0
-    - name: SonarQube Scan
-      uses: kitabisa/sonarqube-action@v1.2.0
-      with:
-        host: https://db36-158-228-253-36.ngrok-free.app 
-        login: 2829cc7a8a8836e28a66477daf6f31975b65bb5a 
-        projectKey: check
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up JDK
+        uses: actions/setup-java@v2
+        with:
+          distribution: 'adopt'
+          java-version: '11'
+
+      - name: SonarQube Scan
+        uses: sonarsource/sonarqube-scan-action@v2
+        with:
+          sonar-url: https://db36-158-228-253-36.ngrok-free.app # URL of your SonarQube server
+          sonar-login: 2829cc7a8a8836e28a66477daf6f31975b65bb5a # Authentication token
+          project-key: More-about-githubAction # Project key in SonarQube
+
+  decorate_pr:
+    runs-on: ubuntu-latest
+    needs: sonarqube
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Download SonarScanner
+        run: |
+          curl -L -o sonar-scanner-cli.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.6.0.2311-linux.zip
+          unzip sonar-scanner-cli.zip
+
+      - name: SonarQube PR Decoration
+        env:
+          SONAR_TOKEN: 2829cc7a8a8836e28a66477daf6f31975b65bb5a
+        run: |
+          ./sonar-scanner-4.6.0.2311-linux/bin/sonar-scanner \
+            -Dsonar.login= 2829cc7a8a8836e28a66477daf6f31975b65bb5a \
+            -Dsonar.host.url= https://db36-158-228-253-36.ngrok-free.app \
+            -Dsonar.analysis.mode=preview \
+            -Dsonar.github.pullRequest=${{ github.event.pull_request.number }} \
+            -Dsonar.github.repository=${{ github.repository }}
